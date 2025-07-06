@@ -154,19 +154,15 @@ exports.handler = async (event, context) => {
     
     // 模拟API Key使用统计（在实际项目中应该使用数据库）
     // 注意：由于Netlify Functions的无状态特性，这个统计会在每次部署后重置
-    // 为了演示目的，我们使用一个简单的递增逻辑
-    let apiKeyUsage = {
-      'dk_test_1234567890abcdef1234567890abcdef': 0,
-      'dk_demo_abcdef1234567890abcdef1234567890': 0
-    };
+    // 为了演示递增效果，我们使用基于时间的递增逻辑
     
-    // 从请求中获取当前时间戳，用于生成一个"伪随机"的使用次数
+    // 获取当前时间戳，用于计算"递增"的使用次数
     const timestamp = Date.now();
-    const requestId = event.requestContext?.requestId || 'default';
+    const startTime = new Date('2024-01-01').getTime(); // 设置一个起始时间
+    const timeDiff = timestamp - startTime;
     
-    // 基于时间戳和请求ID生成一个模拟的使用次数
-    // 这样每次调用都会有不同的"使用次数"，模拟递增效果
-    const baseUsage = Math.floor((timestamp % 1000) / 10) + 1; // 1-100之间的数字
+    // 基于时间差计算使用次数，这样每次调用都会递增
+    const baseUsage = Math.floor(timeDiff / 1000) + 1; // 每秒递增1次
     
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
@@ -200,11 +196,14 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // 计算模拟的使用次数
+    // 计算递增的使用次数
     let usageCount = baseUsage;
+    
+    // 为不同的API Key添加不同的偏移量，确保递增
     if (apiKey === 'dk_test_1234567890abcdef1234567890abcdef') {
-      // 为测试API Key添加一些变化
-      usageCount = baseUsage + Math.floor(Math.random() * 10);
+      usageCount = baseUsage + 100; // 测试Key从100开始递增
+    } else if (apiKey === 'dk_demo_abcdef1234567890abcdef1234567890') {
+      usageCount = baseUsage + 200; // 演示Key从200开始递增
     }
 
     // 获取请求参数
