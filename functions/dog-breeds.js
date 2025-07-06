@@ -124,6 +124,40 @@ const dogBreeds = {
 
 
 
+// 使用文件系统来保存API Key使用次数和申请的API Key
+const fs = require('fs').promises;
+const path = require('path');
+
+// 文件路径
+const usageFile = '/tmp/api_usage.json';
+const apiKeysFile = '/tmp/api_keys.json';
+const userApiKeysFile = '/tmp/user_api_keys.json'; // 用户邮箱与API Key的映射
+
+// 异步读取文件，避免阻塞
+async function readJsonFile(filePath, defaultValue = {}) {
+  try {
+    const data = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.log(`读取文件失败 ${filePath}:`, error.message);
+    return defaultValue;
+  }
+}
+
+// 异步写入文件，使用原子操作
+async function writeJsonFile(filePath, data) {
+  try {
+    // 先写入临时文件，然后重命名，确保原子性
+    const tempFile = filePath + '.tmp';
+    await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
+    await fs.rename(tempFile, filePath);
+    return true;
+  } catch (error) {
+    console.log(`写入文件失败 ${filePath}:`, error.message);
+    return false;
+  }
+}
+
 exports.handler = async (event, context) => {
   // 设置CORS头
   const headers = {
@@ -145,40 +179,6 @@ exports.handler = async (event, context) => {
   try {
     // 获取API Key
     const apiKey = event.headers['x-api-key'] || event.queryStringParameters?.api_key;
-    
-    // 使用文件系统来保存API Key使用次数和申请的API Key
-    const fs = require('fs').promises;
-    const path = require('path');
-    
-    // 文件路径
-    const usageFile = '/tmp/api_usage.json';
-    const apiKeysFile = '/tmp/api_keys.json';
-    const userApiKeysFile = '/tmp/user_api_keys.json'; // 用户邮箱与API Key的映射
-    
-    // 异步读取文件，避免阻塞
-    async function readJsonFile(filePath, defaultValue = {}) {
-      try {
-        const data = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(data);
-      } catch (error) {
-        console.log(`读取文件失败 ${filePath}:`, error.message);
-        return defaultValue;
-      }
-    }
-    
-    // 异步写入文件，使用原子操作
-    async function writeJsonFile(filePath, data) {
-      try {
-        // 先写入临时文件，然后重命名，确保原子性
-        const tempFile = filePath + '.tmp';
-        await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
-        await fs.rename(tempFile, filePath);
-        return true;
-      } catch (error) {
-        console.log(`写入文件失败 ${filePath}:`, error.message);
-        return false;
-      }
-    }
     
     // 读取当前使用次数
     let apiKeyUsage = await readJsonFile(usageFile, {});
