@@ -152,6 +152,13 @@ exports.handler = async (event, context) => {
       'dk_demo_abcdef1234567890abcdef1234567890'
     ];
     
+    // 模拟API Key使用统计（在实际项目中应该使用数据库）
+    // 注意：由于Netlify Functions的无状态特性，这个统计会在每次部署后重置
+    let apiKeyUsage = {
+      'dk_test_1234567890abcdef1234567890abcdef': 0,
+      'dk_demo_abcdef1234567890abcdef1234567890': 0
+    };
+    
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
       const newApiKey = validApiKeys[0]; // 返回固定的测试Key
@@ -182,6 +189,11 @@ exports.handler = async (event, context) => {
           hint: '演示环境可以使用: dk_test_1234567890abcdef1234567890abcdef'
         })
       };
+    }
+    
+    // 增加API Key使用次数
+    if (apiKeyUsage[apiKey] !== undefined) {
+      apiKeyUsage[apiKey]++;
     }
 
     // 获取请求参数
@@ -221,7 +233,7 @@ exports.handler = async (event, context) => {
         data: breedInfo,
         usage: {
           apiKey: apiKey.substring(0, 8) + '...',
-          usageCount: '演示环境'
+          usageCount: apiKeyUsage[apiKey] || 0
         }
       })
     };

@@ -88,7 +88,11 @@ class DogBreedsAPITester:
             if result.get('success'):
                 print(f"✅ 成功获取 {breed} 信息")
                 if 'usage' in result:
-                    print(f"📊 API使用次数: {result['usage']['usageCount']}")
+                    usage_count = result['usage']['usageCount']
+                    if isinstance(usage_count, str):
+                        print(f"📊 API使用次数: {usage_count}")
+                    else:
+                        print(f"📊 API使用次数: {usage_count} 次")
             else:
                 print(f"❌ 获取 {breed} 信息失败: {result.get('error', '未知错误')}")
             
