@@ -146,13 +146,6 @@ exports.handler = async (event, context) => {
     // 获取API Key
     const apiKey = event.headers['x-api-key'] || event.queryStringParameters?.api_key;
     
-    // 构建有效的API Key列表（包括默认的和已申请的）
-    const validApiKeys = [
-      'dk_test_1234567890abcdef1234567890abcdef',
-      'dk_demo_abcdef1234567890abcdef1234567890',
-      ...apiKeys // 添加已申请的API Key
-    ];
-    
     // 使用文件系统来保存API Key使用次数和申请的API Key
     const fs = require('fs').promises;
     const path = require('path');
@@ -210,6 +203,13 @@ exports.handler = async (event, context) => {
         apiKeyUsage[key] = 0;
       }
     });
+    
+    // 构建有效的API Key列表（包括默认的和已申请的）
+    const validApiKeys = [
+      'dk_test_1234567890abcdef1234567890abcdef',
+      'dk_demo_abcdef1234567890abcdef1234567890',
+      ...apiKeys // 添加已申请的API Key
+    ];
     
     // 如果是查询API Key的请求
     if (event.path.endsWith('/query-key') || event.queryStringParameters?.action === 'query') {
