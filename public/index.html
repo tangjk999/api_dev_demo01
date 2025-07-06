@@ -611,14 +611,31 @@
                 if (data.success) {
                     resultDiv.style.display = 'block';
                     resultDiv.className = 'success';
-                    resultDiv.innerHTML = `
-                        <h3>✅ API Key申请成功！</h3>
-                        <p><strong>您的API Key:</strong> <code>${data.apiKey}</code></p>
-                        <p><strong>邮箱:</strong> ${data.email}</p>
-                        <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
-                        <p style="color: #dc3545; font-weight: bold;">⚠️ 请妥善保管您的API Key，它不会再次显示！</p>
-                        <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存API Key</button>
-                    `;
+                    
+                    if (data.hasExistingKey) {
+                        // 如果已有API Key，提供覆盖选项
+                        resultDiv.innerHTML = `
+                            <h3>🔍 发现已有API Key</h3>
+                            <p><strong>邮箱:</strong> ${data.email}</p>
+                            <p><strong>现有API Key:</strong> <code>${data.apiKey}</code></p>
+                            <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
+                            <p style="color: #ffc107; font-weight: bold;">💡 ${data.note}</p>
+                            <div style="margin-top: 15px;">
+                                <button onclick="saveApiKey('${data.apiKey}')" style="margin-right: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">使用现有Key</button>
+                                <button onclick="overwriteApiKey('${email}')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">覆盖生成新Key</button>
+                            </div>
+                        `;
+                    } else {
+                        // 新申请的API Key
+                        resultDiv.innerHTML = `
+                            <h3>✅ API Key申请成功！</h3>
+                            <p><strong>您的API Key:</strong> <code>${data.apiKey}</code></p>
+                            <p><strong>邮箱:</strong> ${data.email}</p>
+                            <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
+                            <p style="color: #dc3545; font-weight: bold;">⚠️ 请妥善保管您的API Key，它不会再次显示！</p>
+                            <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存API Key</button>
+                        `;
+                    }
                 } else {
                     resultDiv.style.display = 'block';
                     resultDiv.className = 'error';
@@ -631,6 +648,37 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '申请新API Key';
+            }
+        }
+        
+        async function overwriteApiKey(email) {
+            const resultDiv = document.getElementById('applyResult');
+            
+            try {
+                const response = await fetch(`${applyKeyUrl}?overwrite=true`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <h3>✅ API Key覆盖成功！</h3>
+                        <p><strong>您的新API Key:</strong> <code>${data.apiKey}</code></p>
+                        <p><strong>邮箱:</strong> ${data.email}</p>
+                        <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
+                        <p style="color: #dc3545; font-weight: bold;">⚠️ 旧API Key已被删除，请妥善保管新Key！</p>
+                        <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存新API Key</button>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<h3>❌ 覆盖失败</h3><p>${data.error || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
             }
         }
         

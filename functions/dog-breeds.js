@@ -259,18 +259,40 @@ exports.handler = async (event, context) => {
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
       const email = event.queryStringParameters?.email || 'anonymous@example.com';
+      const overwrite = event.queryStringParameters?.overwrite === 'true';
       
-      // 检查邮箱是否已经申请过API Key，如果存在则覆盖
-      if (userApiKeys[email]) {
+      // 检查邮箱是否已经申请过API Key
+      if (userApiKeys[email] && !overwrite) {
+        const existingApiKey = userApiKeys[email];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: '该邮箱已申请过API Key',
+            apiKey: existingApiKey,
+            email: email,
+            usage: {
+              apiKey: existingApiKey.substring(0, 8) + '...',
+              usageCount: apiKeyUsage[existingApiKey] || 0
+            },
+            note: '如需覆盖现有API Key，请使用overwrite=true参数',
+            hasExistingKey: true
+          })
+        };
+      }
+      
+      // 如果需要覆盖，先删除旧的API Key
+      if (userApiKeys[email] && overwrite) {
         const oldApiKey = userApiKeys[email];
         // 从API Key列表中移除旧的Key
         const keyIndex = apiKeys.indexOf(oldApiKey);
         if (keyIndex > -1) {
           apiKeys.splice(keyIndex, 1);
         }
-        // 删除旧Key的使用次数记录
+        // 删除旧Key的使用次数
         delete apiKeyUsage[oldApiKey];
-        console.log('覆盖旧API Key:', oldApiKey, '邮箱:', email);
+        console.log('已删除旧的API Key:', oldApiKey);
       }
       
       // 生成新的API Key
