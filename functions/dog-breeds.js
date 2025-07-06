@@ -124,38 +124,31 @@ const dogBreeds = {
 
 
 
-// 使用文件系统来保存API Key使用次数和申请的API Key
-const fs = require('fs').promises;
-const path = require('path');
+// 内存存储（临时解决方案，避免文件系统问题）
+let apiKeyUsage = {
+  'dk_test_1234567890abcdef1234567890abcdef': 0,
+  'dk_demo_abcdef1234567890abcdef1234567890': 0
+};
+let apiKeys = [];
+let userApiKeys = {};
 
-// 文件路径
-const usageFile = '/tmp/api_usage.json';
-const apiKeysFile = '/tmp/api_keys.json';
-const userApiKeysFile = '/tmp/user_api_keys.json'; // 用户邮箱与API Key的映射
-
-// 异步读取文件，避免阻塞
+// 模拟文件操作函数
 async function readJsonFile(filePath, defaultValue = {}) {
-  try {
-    const data = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.log(`读取文件失败 ${filePath}:`, error.message);
-    return defaultValue;
-  }
+  if (filePath.includes('usage')) return apiKeyUsage;
+  if (filePath.includes('api_keys')) return apiKeys;
+  if (filePath.includes('user_api_keys')) return userApiKeys;
+  return defaultValue;
 }
 
-// 异步写入文件，使用原子操作
 async function writeJsonFile(filePath, data) {
-  try {
-    // 先写入临时文件，然后重命名，确保原子性
-    const tempFile = filePath + '.tmp';
-    await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
-    await fs.rename(tempFile, filePath);
-    return true;
-  } catch (error) {
-    console.log(`写入文件失败 ${filePath}:`, error.message);
-    return false;
+  if (filePath.includes('usage')) {
+    apiKeyUsage = data;
+  } else if (filePath.includes('api_keys')) {
+    apiKeys = data;
+  } else if (filePath.includes('user_api_keys')) {
+    userApiKeys = data;
   }
+  return true;
 }
 
 exports.handler = async (event, context) => {
