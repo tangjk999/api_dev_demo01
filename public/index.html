@@ -514,15 +514,18 @@
         <div id="applyKeyModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeApplyKeyModal()">&times;</span>
-                <h2>🔑 申请API Key</h2>
-                <p style="margin-bottom: 20px; color: #666;">请输入您的邮箱地址来申请API Key</p>
+                <h2>🔑 API Key管理</h2>
+                <p style="margin-bottom: 20px; color: #666;">申请新API Key或查询已有API Key</p>
                 
                 <div class="form-group">
                     <label for="emailInput">邮箱地址 *</label>
                     <input type="email" id="emailInput" placeholder="your-email@example.com" required>
                 </div>
                 
-                <button class="submit-btn" onclick="applyApiKey()" id="applySubmitBtn">申请API Key</button>
+                <div class="button-group" style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="submit-btn" onclick="applyApiKey()" id="applySubmitBtn" style="flex: 1;">申请新API Key</button>
+                    <button class="query-btn" onclick="queryApiKey()" id="querySubmitBtn" style="flex: 1; background: #17a2b8;">查询API Key</button>
+                </div>
                 
                 <div id="applyResult" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>
             </div>
@@ -612,6 +615,7 @@
                         <h3>✅ API Key申请成功！</h3>
                         <p><strong>您的API Key:</strong> <code>${data.apiKey}</code></p>
                         <p><strong>邮箱:</strong> ${data.email}</p>
+                        <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
                         <p style="color: #dc3545; font-weight: bold;">⚠️ 请妥善保管您的API Key，它不会再次显示！</p>
                         <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存API Key</button>
                     `;
@@ -626,7 +630,56 @@
                 resultDiv.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '申请API Key';
+                submitBtn.textContent = '申请新API Key';
+            }
+        }
+        
+        async function queryApiKey() {
+            const email = document.getElementById('emailInput').value.trim();
+            const queryBtn = document.getElementById('querySubmitBtn');
+            const resultDiv = document.getElementById('applyResult');
+            
+            if (!email) {
+                alert('请输入邮箱地址');
+                return;
+            }
+            
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+            
+            queryBtn.disabled = true;
+            queryBtn.textContent = '查询中...';
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}?action=query&email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ 查询成功！</h3>
+                        <p><strong>您的API Key:</strong> <code>${data.apiKey}</code></p>
+                        <p><strong>邮箱:</strong> ${data.email}</p>
+                        <p><strong>使用次数:</strong> ${data.usage.usageCount}</p>
+                        <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存API Key</button>
+                    `;
+                } else {
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `<h3>❌ 查询失败</h3><p>${data.error || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            } finally {
+                queryBtn.disabled = false;
+                queryBtn.textContent = '查询API Key';
             }
         }
         

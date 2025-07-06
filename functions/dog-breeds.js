@@ -160,6 +160,7 @@ exports.handler = async (event, context) => {
     // 文件路径
     const usageFile = '/tmp/api_usage.json';
     const apiKeysFile = '/tmp/api_keys.json';
+    const userApiKeysFile = '/tmp/user_api_keys.json'; // 用户邮箱与API Key的映射
     
     // 异步读取文件，避免阻塞
     async function readJsonFile(filePath, defaultValue = {}) {
@@ -192,6 +193,9 @@ exports.handler = async (event, context) => {
     // 读取已申请的API Key
     let apiKeys = await readJsonFile(apiKeysFile, []);
     
+    // 读取用户邮箱与API Key的映射
+    let userApiKeys = await readJsonFile(userApiKeysFile, {});
+    
     // 初始化默认API Key使用次数
     if (!apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef']) {
       apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef'] = 0;
@@ -207,16 +211,86 @@ exports.handler = async (event, context) => {
       }
     });
     
+    // 如果是查询API Key的请求
+    if (event.path.endsWith('/query-key') || event.queryStringParameters?.action === 'query') {
+      const email = event.queryStringParameters?.email;
+      
+      if (!email) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: '请提供邮箱地址',
+            message: '查询API Key需要提供邮箱地址'
+          })
+        };
+      }
+      
+      const apiKey = userApiKeys[email];
+      
+      if (!apiKey) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({
+            error: '未找到该邮箱的API Key',
+            message: '该邮箱尚未申请API Key，请先申请',
+            hint: '可以通过申请功能获取API Key'
+          })
+        };
+      }
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          message: '查询成功',
+          apiKey: apiKey,
+          email: email,
+          usage: {
+            apiKey: apiKey.substring(0, 8) + '...',
+            usageCount: apiKeyUsage[apiKey] || 0
+          }
+        })
+      };
+    }
+    
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
+      const email = event.queryStringParameters?.email || 'anonymous@example.com';
+      
+      // 检查邮箱是否已经申请过API Key
+      if (userApiKeys[email]) {
+        const existingApiKey = userApiKeys[email];
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: '该邮箱已申请过API Key',
+            apiKey: existingApiKey,
+            email: email,
+            usage: {
+              apiKey: existingApiKey.substring(0, 8) + '...',
+              usageCount: apiKeyUsage[existingApiKey] || 0
+            },
+            note: '每个邮箱只能申请一个API Key'
+          })
+        };
+      }
+      
       // 生成新的API Key
       const newApiKey = 'dk_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const email = event.queryStringParameters?.email || 'anonymous@example.com';
+      
+      // 保存用户邮箱与API Key的映射
+      userApiKeys[email] = newApiKey;
+      await writeJsonFile(userApiKeysFile, userApiKeys);
       
       // 保存新的API Key到文件
       apiKeys.push(newApiKey);
       await writeJsonFile(apiKeysFile, apiKeys);
-      console.log('新API Key已保存:', newApiKey);
+      console.log('新API Key已保存:', newApiKey, '邮箱:', email);
       
       // 初始化新API Key的使用次数
       apiKeyUsage[newApiKey] = 0;
