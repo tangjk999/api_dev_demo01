@@ -1,16 +1,3 @@
-// 模拟API Key存储（实际项目中应该使用数据库）
-const apiKeys = new Map();
-
-// 生成API Key的函数
-function generateApiKey() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = 'dk_';
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
 exports.handler = async (event, context) => {
   // 设置CORS头
   const headers = {
@@ -60,15 +47,8 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 生成新的API Key
-    const newApiKey = generateApiKey();
-    
-    // 存储API Key信息（实际项目中应该存储到数据库）
-    apiKeys.set(newApiKey, {
-      email: email,
-      createdAt: new Date().toISOString(),
-      usageCount: 0
-    });
+    // 生成演示用的API Key
+    const newApiKey = 'dk_test_1234567890abcdef1234567890abcdef';
     
     return {
       statusCode: 200,
@@ -78,10 +58,10 @@ exports.handler = async (event, context) => {
         message: 'API Key申请成功',
         apiKey: newApiKey,
         email: email,
-        note: '请妥善保管您的API Key，它不会再次显示',
+        note: '这是演示用的API Key，可以重复使用',
         usage: {
           createdAt: new Date().toISOString(),
-          usageCount: 0
+          usageCount: '演示环境'
         }
       })
     };

@@ -30,10 +30,13 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/apply-api-key \
 {
   "success": true,
   "message": "API Key申请成功",
-  "apiKey": "dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "email": "your-email@example.com"
+  "apiKey": "dk_test_1234567890abcdef1234567890abcdef",
+  "email": "your-email@example.com",
+  "note": "这是演示用的API Key，可以重复使用"
 }
 ```
+
+**注意**: 演示环境使用固定的API Key，可以重复使用，无需重复申请。
 
 ### 获取狗狗品种信息
 
@@ -45,7 +48,7 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/apply-api-key \
 
 **示例请求**:
 ```
-GET /.netlify/functions/dog-breeds?breed=金毛&api_key=dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GET /.netlify/functions/dog-breeds?breed=金毛&api_key=dk_test_1234567890abcdef1234567890abcdef
 ```
 
 **响应格式**:
@@ -209,7 +212,7 @@ pip install -r requirements.txt
 python python_test_tool.py https://your-site.netlify.app
 
 # 使用现有API Key运行测试
-python python_test_tool.py https://your-site.netlify.app dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+python python_test_tool.py https://your-site.netlify.app dk_test_1234567890abcdef1234567890abcdef
 ```
 
 ## 🤝 贡献

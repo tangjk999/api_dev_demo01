@@ -107,7 +107,10 @@
     <script>
         // 获取当前部署的API基础URL
         const apiBaseUrl = window.location.origin + '/.netlify/functions/dog-breeds';
-        document.getElementById('apiUrl').textContent = apiBaseUrl + '?breed=品种名称';
+        document.getElementById('apiUrl').textContent = apiBaseUrl + '?breed=品种名称&api_key=YOUR_API_KEY';
+        
+        // 为演示目的，自动填入测试API Key
+        document.getElementById('apiKeyInput').value = 'dk_test_1234567890abcdef1234567890abcdef';
         
         async function applyApiKey() {
             const email = prompt('请输入您的邮箱地址:');

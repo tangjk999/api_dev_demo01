@@ -183,18 +183,12 @@ def main():
     # 创建测试器
     tester = DogBreedsAPITester(base_url, api_key)
     
-    # 如果没有API Key，先申请
+    # 如果没有API Key，使用演示用的API Key
     if not api_key:
-        print("🔑 检测到未提供API Key，开始申请...")
-        email = input("请输入您的邮箱地址: ").strip()
-        if not email:
-            print("❌ 邮箱地址不能为空")
-            return
-        
-        result = tester.apply_api_key(email)
-        if not result.get('success'):
-            print("❌ API Key申请失败，程序退出")
-            return
+        print("🔑 检测到未提供API Key，使用演示用的API Key...")
+        api_key = 'dk_test_1234567890abcdef1234567890abcdef'
+        tester.api_key = api_key
+        print(f"✅ 使用演示API Key: {api_key}")
     
     # 测试所有品种
     tester.test_all_breeds()

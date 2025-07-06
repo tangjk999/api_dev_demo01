@@ -556,6 +556,11 @@
         window.addEventListener('load', function() {
             if (currentApiKey) {
                 showApiKeyField();
+            } else {
+                // 为演示目的，自动填入测试API Key
+                currentApiKey = 'dk_test_1234567890abcdef1234567890abcdef';
+                localStorage.setItem('dogBreedsApiKey', currentApiKey);
+                showApiKeyField();
             }
         });
         
