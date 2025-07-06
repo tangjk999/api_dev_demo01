@@ -11,16 +11,41 @@
 
 ## 📋 API 接口说明
 
+### 申请API Key
+
+**请求方式**: POST  
+**接口地址**: `/.netlify/functions/apply-api-key`  
+**参数**: 
+- `email` (必需): 邮箱地址
+
+**示例请求**:
+```bash
+curl -X POST https://your-site.netlify.app/.netlify/functions/apply-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"email": "your-email@example.com"}'
+```
+
+**响应格式**:
+```json
+{
+  "success": true,
+  "message": "API Key申请成功",
+  "apiKey": "dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "email": "your-email@example.com"
+}
+```
+
 ### 获取狗狗品种信息
 
 **请求方式**: GET  
 **接口地址**: `/.netlify/functions/dog-breeds`  
 **参数**: 
 - `breed` (必需): 狗狗品种名称
+- `api_key` (必需): 您的API Key
 
 **示例请求**:
 ```
-GET /.netlify/functions/dog-breeds?breed=金毛
+GET /.netlify/functions/dog-breeds?breed=金毛&api_key=dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 **响应格式**:
@@ -113,10 +138,16 @@ netlify deploy --prod
 ```
 api_dev_demo01/
 ├── functions/
-│   └── dog-breeds.js          # API 函数
+│   ├── dog-breeds.js          # 狗狗品种API函数
+│   └── apply-api-key.js       # API Key申请函数
 ├── public/
-│   └── index.html             # 前端页面
+│   ├── index.html             # 前端主页面
+│   └── test.html              # API测试页面
+├── python_test_tool.py        # Python测试工具
+├── requirements.txt           # Python依赖
 ├── netlify.toml               # Netlify 配置
+├── package.json               # 项目配置
+├── .gitignore                 # Git忽略文件
 ├── README.md                  # 项目说明
 └── prompt.md                  # 需求文档
 ```
@@ -133,21 +164,52 @@ api_dev_demo01/
 ### 通过前端界面
 
 1. 打开部署后的网站
-2. 在搜索框中输入狗狗品种名称
-3. 点击搜索或按回车键
-4. 查看详细的品种信息
+2. 点击"申请API Key"按钮，输入邮箱地址申请API Key
+3. 保存API Key后，在搜索框中输入狗狗品种名称
+4. 点击搜索或按回车键
+5. 查看详细的品种信息
 
 ### 直接调用 API
 
 ```javascript
+// 申请API Key
+fetch('https://your-site.netlify.app/.netlify/functions/apply-api-key', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ email: 'your-email@example.com' })
+})
+.then(response => response.json())
+.then(data => {
+  if (data.success) {
+    console.log('API Key:', data.apiKey);
+  }
+});
+
 // 获取金毛信息
-fetch('https://your-site.netlify.app/.netlify/functions/dog-breeds?breed=金毛')
+fetch('https://your-site.netlify.app/.netlify/functions/dog-breeds?breed=金毛&api_key=YOUR_API_KEY')
   .then(response => response.json())
   .then(data => {
     if (data.success) {
       console.log(data.data);
     }
   });
+```
+
+### Python 测试工具
+
+项目包含一个完整的Python测试工具，可以自动测试所有API功能：
+
+```bash
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行测试工具（自动申请API Key）
+python python_test_tool.py https://your-site.netlify.app
+
+# 使用现有API Key运行测试
+python python_test_tool.py https://your-site.netlify.app dk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ## 🤝 贡献

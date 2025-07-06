@@ -61,6 +61,15 @@
         <h1>🐕 狗狗品种科普 API 测试页面</h1>
         
         <div class="test-section">
+            <h3>🔑 API Key 管理</h3>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="apiKeyInput" placeholder="请输入您的API Key..." style="width: 70%; padding: 10px; margin-right: 10px;">
+                <button onclick="applyApiKey()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">申请API Key</button>
+            </div>
+            <div id="apiKeyResult" style="margin-top: 10px; padding: 10px; border-radius: 5px; display: none;"></div>
+        </div>
+        
+        <div class="test-section">
             <h3>测试 API 功能</h3>
             <p>点击下面的按钮测试不同的狗狗品种：</p>
             
@@ -86,7 +95,12 @@
             <h3>API 信息</h3>
             <p><strong>API 地址:</strong> <code id="apiUrl"></code></p>
             <p><strong>请求方式:</strong> GET</p>
-            <p><strong>参数:</strong> breed (狗狗品种名称)</p>
+            <p><strong>必需参数:</strong></p>
+            <ul>
+                <li><code>breed</code> - 狗狗品种名称</li>
+                <li><code>api_key</code> - 您的API Key</li>
+            </ul>
+            <p><strong>申请API Key:</strong> <code>POST /.netlify/functions/apply-api-key</code></p>
         </div>
     </div>
 
@@ -95,19 +109,73 @@
         const apiBaseUrl = window.location.origin + '/.netlify/functions/dog-breeds';
         document.getElementById('apiUrl').textContent = apiBaseUrl + '?breed=品种名称';
         
+        async function applyApiKey() {
+            const email = prompt('请输入您的邮箱地址:');
+            if (!email) return;
+            
+            const resultDiv = document.getElementById('apiKeyResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在申请API Key...';
+            
+            try {
+                const response = await fetch(`${apiBaseUrl.replace('/dog-breeds', '/apply-api-key')}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ API Key申请成功！</h4>
+                        <p><strong>API Key:</strong> <code>${data.apiKey}</code></p>
+                        <p><strong>邮箱:</strong> ${data.email}</p>
+                        <button onclick="setApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">使用此API Key</button>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 申请失败: ${data.error || '未知错误'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 网络错误: ${error.message}`;
+            }
+        }
+        
+        function setApiKey(apiKey) {
+            document.getElementById('apiKeyInput').value = apiKey;
+            document.getElementById('apiKeyResult').style.display = 'none';
+        }
+        
         async function testBreed(breed) {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            
+            if (!apiKey) {
+                alert('请先输入API Key');
+                return;
+            }
+            
             const resultDiv = document.getElementById('testResult');
             resultDiv.style.display = 'block';
             resultDiv.className = 'result';
             resultDiv.textContent = `正在测试品种: ${breed}...`;
             
             try {
-                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}`);
+                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}&api_key=${encodeURIComponent(apiKey)}`);
                 const data = await response.json();
                 
                 if (data.success) {
                     resultDiv.className = 'result success';
-                    resultDiv.textContent = `✅ 成功获取 ${breed} 信息:\n\n${JSON.stringify(data.data, null, 2)}`;
+                    let resultText = `✅ 成功获取 ${breed} 信息:\n\n${JSON.stringify(data.data, null, 2)}`;
+                    if (data.usage) {
+                        resultText += `\n\n📊 API使用信息:\n${JSON.stringify(data.usage, null, 2)}`;
+                    }
+                    resultDiv.textContent = resultText;
                 } else {
                     resultDiv.className = 'result error';
                     resultDiv.textContent = `❌ 获取 ${breed} 信息失败:\n\n${JSON.stringify(data, null, 2)}`;
@@ -119,13 +187,20 @@
         }
         
         async function testError(breed) {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            
+            if (!apiKey) {
+                alert('请先输入API Key');
+                return;
+            }
+            
             const resultDiv = document.getElementById('testResult');
             resultDiv.style.display = 'block';
             resultDiv.className = 'result';
             resultDiv.textContent = `正在测试错误情况: ${breed || '空参数'}...`;
             
             try {
-                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}`);
+                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}&api_key=${encodeURIComponent(apiKey)}`);
                 const data = await response.json();
                 
                 resultDiv.className = 'result error';

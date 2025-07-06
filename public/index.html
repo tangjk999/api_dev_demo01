@@ -50,6 +50,150 @@
             background: #f8f9fa;
         }
 
+        .api-key-section {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            align-items: center;
+        }
+
+        .api-key-field {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 50px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .api-key-field:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .apply-key-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .apply-key-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .search-box {
             display: flex;
             gap: 15px;
@@ -293,6 +437,13 @@
         </div>
 
         <div class="search-section">
+            <div class="api-key-section">
+                <div class="api-key-input">
+                    <input type="text" class="api-key-field" id="apiKeyInput" placeholder="请输入您的API Key..." style="display: none;">
+                    <button class="apply-key-btn" onclick="showApplyKeyForm()">申请API Key</button>
+                </div>
+            </div>
+            
             <div class="search-box">
                 <input type="text" class="search-input" id="breedInput" placeholder="输入狗狗品种名称..." list="breedList">
                 <button class="search-btn" onclick="searchBreed()">搜索</button>
@@ -359,20 +510,138 @@
             </div>
         </div>
 
+        <!-- API Key申请模态框 -->
+        <div id="applyKeyModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeApplyKeyModal()">&times;</span>
+                <h2>🔑 申请API Key</h2>
+                <p style="margin-bottom: 20px; color: #666;">请输入您的邮箱地址来申请API Key</p>
+                
+                <div class="form-group">
+                    <label for="emailInput">邮箱地址 *</label>
+                    <input type="email" id="emailInput" placeholder="your-email@example.com" required>
+                </div>
+                
+                <button class="submit-btn" onclick="applyApiKey()" id="applySubmitBtn">申请API Key</button>
+                
+                <div id="applyResult" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>
+            </div>
+        </div>
+
         <div class="api-info">
             <h3>API 接口信息</h3>
-            <p>这是一个基于 Netlify Functions 的狗狗品种科普 API，支持以下功能：</p>
+            <p>这是一个基于 Netlify Functions 的狗狗品种科普 API，需要API Key才能调用：</p>
             <div class="api-endpoint">
-                GET /.netlify/functions/dog-breeds?breed=品种名称
+                GET /.netlify/functions/dog-breeds?breed=品种名称&api_key=YOUR_API_KEY
             </div>
-            <p><strong>输入参数：</strong> breed - 狗狗品种名称</p>
+            <p><strong>输入参数：</strong></p>
+            <ul>
+                <li><code>breed</code> - 狗狗品种名称（必需）</li>
+                <li><code>api_key</code> - 您的API Key（必需）</li>
+            </ul>
             <p><strong>输出：</strong> 包含品种介绍、特点、图片等详细信息的 JSON 数据</p>
+            <p><strong>申请API Key：</strong> <code>POST /.netlify/functions/apply-api-key</code></p>
         </div>
     </div>
 
     <script>
         // 获取当前部署的API基础URL
         const apiBaseUrl = window.location.origin + '/.netlify/functions/dog-breeds';
+        const applyKeyUrl = window.location.origin + '/.netlify/functions/apply-api-key';
+        
+        // 从localStorage获取API Key
+        let currentApiKey = localStorage.getItem('dogBreedsApiKey');
+        
+        // 页面加载时检查API Key
+        window.addEventListener('load', function() {
+            if (currentApiKey) {
+                showApiKeyField();
+            }
+        });
+        
+        function showApplyKeyForm() {
+            document.getElementById('applyKeyModal').style.display = 'block';
+        }
+        
+        function closeApplyKeyModal() {
+            document.getElementById('applyKeyModal').style.display = 'none';
+            document.getElementById('applyResult').style.display = 'none';
+            document.getElementById('emailInput').value = '';
+        }
+        
+        async function applyApiKey() {
+            const email = document.getElementById('emailInput').value.trim();
+            const submitBtn = document.getElementById('applySubmitBtn');
+            const resultDiv = document.getElementById('applyResult');
+            
+            if (!email) {
+                alert('请输入邮箱地址');
+                return;
+            }
+            
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '申请中...';
+            
+            try {
+                const response = await fetch(applyKeyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ API Key申请成功！</h3>
+                        <p><strong>您的API Key:</strong> <code>${data.apiKey}</code></p>
+                        <p><strong>邮箱:</strong> ${data.email}</p>
+                        <p style="color: #dc3545; font-weight: bold;">⚠️ 请妥善保管您的API Key，它不会再次显示！</p>
+                        <button onclick="saveApiKey('${data.apiKey}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">保存API Key</button>
+                    `;
+                } else {
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `<h3>❌ 申请失败</h3><p>${data.error || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `<h3>❌ 网络错误</h3><p>${error.message}</p>`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '申请API Key';
+            }
+        }
+        
+        function saveApiKey(apiKey) {
+            localStorage.setItem('dogBreedsApiKey', apiKey);
+            currentApiKey = apiKey;
+            showApiKeyField();
+            closeApplyKeyModal();
+            alert('API Key已保存！现在您可以开始搜索狗狗品种了。');
+        }
+        
+        function showApiKeyField() {
+            const apiKeyField = document.getElementById('apiKeyInput');
+            const applyKeyBtn = document.querySelector('.apply-key-btn');
+            
+            apiKeyField.style.display = 'block';
+            apiKeyField.value = currentApiKey;
+            applyKeyBtn.textContent = '更换API Key';
+            applyKeyBtn.onclick = showApplyKeyForm;
+        }
         
         function selectBreed(breed) {
             document.getElementById('breedInput').value = breed;
@@ -386,6 +655,12 @@
                 alert('请输入狗狗品种名称');
                 return;
             }
+            
+            if (!currentApiKey) {
+                alert('请先申请API Key');
+                showApplyKeyForm();
+                return;
+            }
 
             // 显示加载状态
             document.getElementById('resultSection').style.display = 'block';
@@ -393,15 +668,22 @@
             document.getElementById('resultCard').style.display = 'none';
 
             try {
-                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}`);
+                const response = await fetch(`${apiBaseUrl}?breed=${encodeURIComponent(breed)}&api_key=${encodeURIComponent(currentApiKey)}`);
                 const data = await response.json();
 
                 // 隐藏加载状态
                 document.getElementById('loading').style.display = 'none';
 
                 if (data.success) {
-                    displayResult(data.data);
+                    displayResult(data.data, data.usage);
                 } else {
+                    if (data.error === '无效的API Key') {
+                        alert('API Key无效，请重新申请');
+                        localStorage.removeItem('dogBreedsApiKey');
+                        currentApiKey = null;
+                        document.getElementById('apiKeyInput').style.display = 'none';
+                        document.querySelector('.apply-key-btn').textContent = '申请API Key';
+                    }
                     displayError(data.error || '获取数据失败');
                 }
             } catch (error) {
@@ -411,7 +693,7 @@
             }
         }
 
-        function displayResult(breedData) {
+        function displayResult(breedData, usage) {
             document.getElementById('resultImage').src = breedData.image;
             document.getElementById('resultTitle').textContent = breedData.name;
             document.getElementById('resultDescription').textContent = breedData.description;
@@ -428,6 +710,21 @@
                 item.textContent = characteristic;
                 characteristicsContainer.appendChild(item);
             });
+
+            // 显示使用信息
+            if (usage) {
+                const usageInfo = document.createElement('div');
+                usageInfo.style.marginTop = '20px';
+                usageInfo.style.padding = '15px';
+                usageInfo.style.background = '#e3f2fd';
+                usageInfo.style.borderRadius = '8px';
+                usageInfo.style.fontSize = '0.9rem';
+                usageInfo.style.color = '#1976d2';
+                usageInfo.innerHTML = `
+                    <strong>API使用信息:</strong> 当前API Key已使用 ${usage.usageCount} 次
+                `;
+                characteristicsContainer.appendChild(usageInfo);
+            }
 
             document.getElementById('resultCard').style.display = 'block';
         }

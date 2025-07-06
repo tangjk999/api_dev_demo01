@@ -122,11 +122,30 @@ const dogBreeds = {
   }
 };
 
+// 模拟API Key存储（实际项目中应该使用数据库）
+const apiKeys = new Map();
+
+// 生成API Key的函数
+function generateApiKey() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = 'dk_';
+  for (let i = 0; i < 32; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// 验证API Key的函数
+function validateApiKey(apiKey) {
+  if (!apiKey) return false;
+  return apiKeys.has(apiKey);
+}
+
 exports.handler = async (event, context) => {
   // 设置CORS头
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Content-Type': 'application/json'
   };
@@ -141,6 +160,52 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // 获取API Key
+    const apiKey = event.headers['x-api-key'] || event.queryStringParameters?.api_key;
+    
+    // 如果是申请API Key的请求
+    if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
+      const newApiKey = generateApiKey();
+      const email = event.queryStringParameters?.email || 'anonymous@example.com';
+      
+      // 存储API Key（实际项目中应该存储到数据库）
+      apiKeys.set(newApiKey, {
+        email: email,
+        createdAt: new Date().toISOString(),
+        usageCount: 0
+      });
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          message: 'API Key申请成功',
+          apiKey: newApiKey,
+          email: email,
+          note: '请妥善保管您的API Key，它不会再次显示'
+        })
+      };
+    }
+    
+    // 验证API Key
+    if (!validateApiKey(apiKey)) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({
+          error: '无效的API Key',
+          message: '请提供有效的API Key。您可以通过申请功能获取API Key。',
+          availableBreeds: Object.keys(dogBreeds)
+        })
+      };
+    }
+    
+    // 更新API Key使用次数
+    const keyInfo = apiKeys.get(apiKey);
+    keyInfo.usageCount++;
+    apiKeys.set(apiKey, keyInfo);
+
     // 获取请求参数
     const { breed } = event.queryStringParameters || {};
     
@@ -175,7 +240,11 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        data: breedInfo
+        data: breedInfo,
+        usage: {
+          apiKey: apiKey.substring(0, 8) + '...',
+          usageCount: keyInfo.usageCount
+        }
       })
     };
 
