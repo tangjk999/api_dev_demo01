@@ -154,34 +154,43 @@ exports.handler = async (event, context) => {
     ];
     
     // 使用文件系统来保存API Key使用次数和申请的API Key
-    const fs = require('fs');
+    const fs = require('fs').promises;
     const path = require('path');
     
     // 文件路径
     const usageFile = '/tmp/api_usage.json';
     const apiKeysFile = '/tmp/api_keys.json';
     
-    // 读取当前使用次数
-    let apiKeyUsage = {};
-    try {
-      if (fs.existsSync(usageFile)) {
-        const data = fs.readFileSync(usageFile, 'utf8');
-        apiKeyUsage = JSON.parse(data);
+    // 异步读取文件，避免阻塞
+    async function readJsonFile(filePath, defaultValue = {}) {
+      try {
+        const data = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(data);
+      } catch (error) {
+        console.log(`读取文件失败 ${filePath}:`, error.message);
+        return defaultValue;
       }
-    } catch (error) {
-      console.log('读取使用次数文件失败，使用默认值');
     }
     
-    // 读取已申请的API Key
-    let apiKeys = [];
-    try {
-      if (fs.existsSync(apiKeysFile)) {
-        const data = fs.readFileSync(apiKeysFile, 'utf8');
-        apiKeys = JSON.parse(data);
+    // 异步写入文件，使用原子操作
+    async function writeJsonFile(filePath, data) {
+      try {
+        // 先写入临时文件，然后重命名，确保原子性
+        const tempFile = filePath + '.tmp';
+        await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
+        await fs.rename(tempFile, filePath);
+        return true;
+      } catch (error) {
+        console.log(`写入文件失败 ${filePath}:`, error.message);
+        return false;
       }
-    } catch (error) {
-      console.log('读取API Key文件失败，使用默认值');
     }
+    
+    // 读取当前使用次数
+    let apiKeyUsage = await readJsonFile(usageFile, {});
+    
+    // 读取已申请的API Key
+    let apiKeys = await readJsonFile(apiKeysFile, []);
     
     // 初始化默认API Key使用次数
     if (!apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef']) {
@@ -206,20 +215,12 @@ exports.handler = async (event, context) => {
       
       // 保存新的API Key到文件
       apiKeys.push(newApiKey);
-      try {
-        fs.writeFileSync(apiKeysFile, JSON.stringify(apiKeys, null, 2));
-        console.log('新API Key已保存:', newApiKey);
-      } catch (error) {
-        console.log('保存API Key文件失败:', error.message);
-      }
+      await writeJsonFile(apiKeysFile, apiKeys);
+      console.log('新API Key已保存:', newApiKey);
       
       // 初始化新API Key的使用次数
       apiKeyUsage[newApiKey] = 0;
-      try {
-        fs.writeFileSync(usageFile, JSON.stringify(apiKeyUsage, null, 2));
-      } catch (error) {
-        console.log('保存使用次数文件失败:', error.message);
-      }
+      await writeJsonFile(usageFile, apiKeyUsage);
       
       return {
         statusCode: 200,
@@ -255,12 +256,12 @@ exports.handler = async (event, context) => {
     if (apiKeyUsage[apiKey] !== undefined) {
       apiKeyUsage[apiKey]++;
       
-      // 保存更新后的使用次数到文件
-      try {
-        fs.writeFileSync(usageFile, JSON.stringify(apiKeyUsage, null, 2));
-      } catch (error) {
-        console.log('保存使用次数文件失败:', error.message);
-      }
+      // 异步保存更新后的使用次数到文件
+      writeJsonFile(usageFile, apiKeyUsage).then(success => {
+        if (success) {
+          console.log(`API Key ${apiKey.substring(0, 8)}... 使用次数已更新为 ${apiKeyUsage[apiKey]}`);
+        }
+      });
     }
 
     // 获取请求参数
