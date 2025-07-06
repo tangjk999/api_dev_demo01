@@ -1,0 +1,36 @@
+{
+  "name": "dog-breeds-api-demo",
+  "version": "1.0.0",
+  "description": "狗狗品种科普 API Demo - 基于 Netlify Functions",
+  "main": "functions/dog-breeds.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "deploy": "netlify deploy --prod",
+    "test": "echo 'Open test.html in browser to test API'"
+  },
+  "keywords": [
+    "api",
+    "netlify",
+    "functions",
+    "dog",
+    "breeds",
+    "demo"
+  ],
+  "author": "API Demo Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/dog-breeds-api-demo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/dog-breeds-api-demo/issues"
+  },
+  "homepage": "https://github.com/your-username/dog-breeds-api-demo#readme"
+} 
