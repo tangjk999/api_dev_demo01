@@ -152,17 +152,31 @@ exports.handler = async (event, context) => {
       'dk_demo_abcdef1234567890abcdef1234567890'
     ];
     
-    // 模拟API Key使用统计（在实际项目中应该使用数据库）
-    // 注意：由于Netlify Functions的无状态特性，这个统计会在每次部署后重置
-    // 为了演示递增效果，我们使用基于时间的递增逻辑
+    // 使用文件系统来保存API Key使用次数
+    const fs = require('fs');
+    const path = require('path');
     
-    // 获取当前时间戳，用于计算"递增"的使用次数
-    const timestamp = Date.now();
-    const startTime = new Date('2024-01-01').getTime(); // 设置一个起始时间
-    const timeDiff = timestamp - startTime;
+    // 使用次数文件路径
+    const usageFile = '/tmp/api_usage.json';
     
-    // 基于时间差计算使用次数，这样每次调用都会递增
-    const baseUsage = Math.floor(timeDiff / 1000) + 1; // 每秒递增1次
+    // 读取当前使用次数
+    let apiKeyUsage = {};
+    try {
+      if (fs.existsSync(usageFile)) {
+        const data = fs.readFileSync(usageFile, 'utf8');
+        apiKeyUsage = JSON.parse(data);
+      }
+    } catch (error) {
+      console.log('读取使用次数文件失败，使用默认值');
+    }
+    
+    // 初始化API Key使用次数
+    if (!apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef']) {
+      apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef'] = 0;
+    }
+    if (!apiKeyUsage['dk_demo_abcdef1234567890abcdef1234567890']) {
+      apiKeyUsage['dk_demo_abcdef1234567890abcdef1234567890'] = 0;
+    }
     
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
@@ -196,14 +210,16 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // 计算递增的使用次数
-    let usageCount = baseUsage;
-    
-    // 为不同的API Key添加不同的偏移量，确保递增
-    if (apiKey === 'dk_test_1234567890abcdef1234567890abcdef') {
-      usageCount = baseUsage + 100; // 测试Key从100开始递增
-    } else if (apiKey === 'dk_demo_abcdef1234567890abcdef1234567890') {
-      usageCount = baseUsage + 200; // 演示Key从200开始递增
+    // 增加API Key使用次数
+    if (apiKeyUsage[apiKey] !== undefined) {
+      apiKeyUsage[apiKey]++;
+      
+      // 保存更新后的使用次数到文件
+      try {
+        fs.writeFileSync(usageFile, JSON.stringify(apiKeyUsage, null, 2));
+      } catch (error) {
+        console.log('保存使用次数文件失败:', error.message);
+      }
     }
 
     // 获取请求参数
@@ -243,7 +259,7 @@ exports.handler = async (event, context) => {
         data: breedInfo,
         usage: {
           apiKey: apiKey.substring(0, 8) + '...',
-          usageCount: usageCount
+          usageCount: apiKeyUsage[apiKey] || 0
         }
       })
     };
