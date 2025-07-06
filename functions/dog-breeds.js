@@ -132,24 +132,10 @@ let apiKeyUsage = {
 let apiKeys = [];
 let userApiKeys = {};
 
-// 模拟文件操作函数
-async function readJsonFile(filePath, defaultValue = {}) {
-  if (filePath.includes('usage')) return apiKeyUsage;
-  if (filePath.includes('api_keys')) return apiKeys;
-  if (filePath.includes('user_api_keys')) return userApiKeys;
-  return defaultValue;
-}
-
-async function writeJsonFile(filePath, data) {
-  if (filePath.includes('usage')) {
-    apiKeyUsage = data;
-  } else if (filePath.includes('api_keys')) {
-    apiKeys = data;
-  } else if (filePath.includes('user_api_keys')) {
-    userApiKeys = data;
-  }
-  return true;
-}
+// 文件路径常量（用于兼容性）
+const usageFile = '/tmp/api_usage.json';
+const apiKeysFile = '/tmp/api_keys.json';
+const userApiKeysFile = '/tmp/user_api_keys.json';
 
 exports.handler = async (event, context) => {
   // 设置CORS头
@@ -173,14 +159,8 @@ exports.handler = async (event, context) => {
     // 获取API Key
     const apiKey = event.headers['x-api-key'] || event.queryStringParameters?.api_key;
     
-    // 读取当前使用次数
-    let apiKeyUsage = await readJsonFile(usageFile, {});
-    
-    // 读取已申请的API Key
-    let apiKeys = await readJsonFile(apiKeysFile, []);
-    
-    // 读取用户邮箱与API Key的映射
-    let userApiKeys = await readJsonFile(userApiKeysFile, {});
+    // 使用内存中的存储数据
+    // apiKeyUsage, apiKeys, userApiKeys 已在文件顶部定义
     
     // 初始化默认API Key使用次数
     if (!apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef']) {
@@ -293,16 +273,13 @@ exports.handler = async (event, context) => {
       
       // 保存用户邮箱与API Key的映射
       userApiKeys[email] = newApiKey;
-      await writeJsonFile(userApiKeysFile, userApiKeys);
       
-      // 保存新的API Key到文件
+      // 保存新的API Key到列表
       apiKeys.push(newApiKey);
-      await writeJsonFile(apiKeysFile, apiKeys);
       console.log('新API Key已保存:', newApiKey, '邮箱:', email);
       
       // 初始化新API Key的使用次数
       apiKeyUsage[newApiKey] = 0;
-      await writeJsonFile(usageFile, apiKeyUsage);
       
       return {
         statusCode: 200,
@@ -337,13 +314,7 @@ exports.handler = async (event, context) => {
     // 增加API Key使用次数
     if (apiKeyUsage[apiKey] !== undefined) {
       apiKeyUsage[apiKey]++;
-      
-      // 异步保存更新后的使用次数到文件
-      writeJsonFile(usageFile, apiKeyUsage).then(success => {
-        if (success) {
-          console.log(`API Key ${apiKey.substring(0, 8)}... 使用次数已更新为 ${apiKeyUsage[apiKey]}`);
-        }
-      });
+      console.log(`API Key ${apiKey.substring(0, 8)}... 使用次数已更新为 ${apiKeyUsage[apiKey]}`);
     }
 
     // 获取请求参数
