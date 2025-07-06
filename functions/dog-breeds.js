@@ -146,18 +146,20 @@ exports.handler = async (event, context) => {
     // 获取API Key
     const apiKey = event.headers['x-api-key'] || event.queryStringParameters?.api_key;
     
-    // 简化的API Key验证 - 使用固定的测试Key
+    // 构建有效的API Key列表（包括默认的和已申请的）
     const validApiKeys = [
       'dk_test_1234567890abcdef1234567890abcdef',
-      'dk_demo_abcdef1234567890abcdef1234567890'
+      'dk_demo_abcdef1234567890abcdef1234567890',
+      ...apiKeys // 添加已申请的API Key
     ];
     
-    // 使用文件系统来保存API Key使用次数
+    // 使用文件系统来保存API Key使用次数和申请的API Key
     const fs = require('fs');
     const path = require('path');
     
-    // 使用次数文件路径
+    // 文件路径
     const usageFile = '/tmp/api_usage.json';
+    const apiKeysFile = '/tmp/api_keys.json';
     
     // 读取当前使用次数
     let apiKeyUsage = {};
@@ -170,7 +172,18 @@ exports.handler = async (event, context) => {
       console.log('读取使用次数文件失败，使用默认值');
     }
     
-    // 初始化API Key使用次数
+    // 读取已申请的API Key
+    let apiKeys = [];
+    try {
+      if (fs.existsSync(apiKeysFile)) {
+        const data = fs.readFileSync(apiKeysFile, 'utf8');
+        apiKeys = JSON.parse(data);
+      }
+    } catch (error) {
+      console.log('读取API Key文件失败，使用默认值');
+    }
+    
+    // 初始化默认API Key使用次数
     if (!apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef']) {
       apiKeyUsage['dk_test_1234567890abcdef1234567890abcdef'] = 0;
     }
@@ -178,10 +191,35 @@ exports.handler = async (event, context) => {
       apiKeyUsage['dk_demo_abcdef1234567890abcdef1234567890'] = 0;
     }
     
+    // 为已申请的API Key初始化使用次数
+    apiKeys.forEach(key => {
+      if (!apiKeyUsage[key]) {
+        apiKeyUsage[key] = 0;
+      }
+    });
+    
     // 如果是申请API Key的请求
     if (event.path.endsWith('/apply-key') || event.queryStringParameters?.action === 'apply') {
-      const newApiKey = validApiKeys[0]; // 返回固定的测试Key
+      // 生成新的API Key
+      const newApiKey = 'dk_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       const email = event.queryStringParameters?.email || 'anonymous@example.com';
+      
+      // 保存新的API Key到文件
+      apiKeys.push(newApiKey);
+      try {
+        fs.writeFileSync(apiKeysFile, JSON.stringify(apiKeys, null, 2));
+        console.log('新API Key已保存:', newApiKey);
+      } catch (error) {
+        console.log('保存API Key文件失败:', error.message);
+      }
+      
+      // 初始化新API Key的使用次数
+      apiKeyUsage[newApiKey] = 0;
+      try {
+        fs.writeFileSync(usageFile, JSON.stringify(apiKeyUsage, null, 2));
+      } catch (error) {
+        console.log('保存使用次数文件失败:', error.message);
+      }
       
       return {
         statusCode: 200,
@@ -191,7 +229,10 @@ exports.handler = async (event, context) => {
           message: 'API Key申请成功',
           apiKey: newApiKey,
           email: email,
-          note: '这是演示用的API Key，可以重复使用'
+          usage: {
+            apiKey: newApiKey.substring(0, 8) + '...',
+            usageCount: 0
+          }
         })
       };
     }
