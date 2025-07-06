@@ -100,7 +100,7 @@ const dogBreeds = {
       "优雅高贵",
       "适应性强"
     ],
-    image: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=400&h=300&fit=crop",
     origin: "德国",
     lifespan: "12-15年",
     size: "小型犬"
